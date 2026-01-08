@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mystery Sounds Royale - V 1.0</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #020205;
+      --primary: #ff1e1e;
+      --primary-dark: #660000;
+      --primary-glow: 0 0 25px rgba(255, 30, 30, 0.8), 0 0 50px rgba(255, 30, 30, 0.4);
+      --green-glow: 0 0 25px #00ff88, 0 0 50px rgba(0, 255, 136, 0.4);
+      --blue-glow: 0 0 25px #00ccff, 0 0 50px rgba(0, 204, 255, 0.4);
+      --orange-glow: 0 0 25px #ffa500, 0 0 50px rgba(255, 165, 0, 0.4);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; overflow: hidden; }
+
+    body {
+      height: 100vh; background: var(--bg-color); color: white;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      align-items: center; padding-bottom: 30px;
+    }
+
+    #canvas-stars { position: absolute; inset: 0; z-index: -1; }
+
+    @keyframes royalGlow {
+      0% { text-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary-dark); }
+      50% { text-shadow: 0 0 30px var(--primary-dark), 0 0 50px #330000; }
+      100% { text-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary-dark); }
+    }
+
+    /* Animation pour le texte d'instruction */
+    @keyframes pulseGlow {
+      0% { text-shadow: 0 0 5px #fff; transform: scale(1); }
+      50% { text-shadow: 0 0 15px #fff, 0 0 25px #fff; transform: scale(1.05); }
+      100% { text-shadow: 0 0 5px #fff; transform: scale(1); }
+    }
+
+    .game-title {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--primary);
+      font-size: 3.2rem;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      animation: royalGlow 3s infinite ease-in-out;
+      letter-spacing: 4px;
+      text-align: center;
+    }
+
+    .help-container {
+      position: absolute; right: 18vw; top: 50%; transform: translateY(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 15px; z-index: 100;
+    }
+
+    /* Style du texte d'instruction mis en avant */
+    .instruction-top {
+      color: white; 
+      font-weight: 900; 
+      font-size: 0.9rem; 
+      text-transform: uppercase; 
+      text-align: center; 
+      max-width: 200px; 
+      margin-bottom: 5px;
+      text-shadow: 0 0 10px #fff;
+      animation: pulseGlow 2s infinite ease-in-out;
+    }
+
+    #help-btn {
+      width: 70px; height: 70px; border-radius: 50%; border: 4px solid white;
+      background: rgba(255,255,255,0.1); color: white; font-size: 2rem;
+      font-weight: bold; cursor: pointer; transition: 0.3s;
+      display: flex; justify-content: center; align-items: center;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    }
+    #help-btn:hover { background: white; color: black; transform: scale(1.1); box-shadow: 0 0 25px #fff; }
+    
+    .help-label { font-weight: 900; font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; margin-top: 5px; }
+
+    .side-info { position: absolute; left: 5vw; top: 50%; transform: translateY(-50%); pointer-events: none; }
+    #status-main { 
+      font-size: 5rem; font-weight: 900; text-transform: uppercase; 
+      color: #00ff88; text-shadow: var(--green-glow); margin-bottom: 5px;
+    }
+
+    .timer-zone { position: absolute; right: 5vw; top: 50%; transform: translateY(-50%); }
+    .timer-track {
+      width: 50px; height: 350px; background: rgba(0,0,0,0.8);
+      border: 2px solid rgba(255,255,255,0.2); border-radius: 25px; position: relative;
+    }
+    #timer-fill { 
+      position: absolute; bottom: 0; width: 100%; height: 0%; 
+      background: var(--primary); border-radius: 20px;
+      box-shadow: var(--primary-glow); transition: height 0.1s linear;
+    }
+
+    .game-goal {
+      color: var(--primary); font-weight: 900; font-size: 1.3rem;
+      text-transform: uppercase; margin-bottom: 25px; text-shadow: var(--primary-glow);
+      text-align: center;
+    }
+
+    .buzzer-wrap {
+      width: 340px; height: 340px; background: radial-gradient(circle, #111, #000);
+      border-radius: 50%; display: flex; justify-content: center; align-items: center;
+      box-shadow: 0 0 50px rgba(0,0,0,1); border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    #buzzer-btn {
+      width: 240px; height: 240px; border-radius: 50%; border: none; cursor: pointer;
+      background: radial-gradient(circle at 50% 120%, #000 0%, #a00 40%, var(--primary) 90%, #fff 150%);
+      box-shadow: 0 15px 0 #600, var(--primary-glow); transition: all 0.1s ease;
+    }
+
+    #buzzer-btn:active:not(:disabled) { transform: translateY(10px); box-shadow: 0 5px 0 #600, var(--primary-glow); }
+    #buzzer-btn:disabled, #skip-btn:disabled { filter: grayscale(1) brightness(0.3); cursor: not-allowed; }
+
+    #skip-btn {
+      margin-top: 25px; padding: 15px 50px; background: transparent; 
+      color: white; border: 2px solid white; border-radius: 50px;
+      font-weight: 800; cursor: pointer; transition: 0.3s;
+    }
+
+    .bug-warning { 
+      color: #ff1e1e; font-weight: 900; font-size: 0.7rem; 
+      text-transform: uppercase; margin-top: 15px; text-align: center; 
+      max-width: 550px; line-height: 1.4;
+    }
+
+    #overlay, #help-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999;
+      display: flex; justify-content: center; align-items: center;
+    }
+    .modal {
+      border: 2px solid var(--primary); padding: 50px; border-radius: 40px; 
+      background: #050505; box-shadow: var(--primary-glow); text-align: center;
+      max-width: 650px;
+    }
+    .chaos-box { border: 2px dashed var(--primary); padding: 15px; margin-top: 20px; border-radius: 15px; background: rgba(255, 30, 30, 0.1); }
+    .modal p { font-size: 1.1rem; margin-bottom: 25px; color: #eee; font-weight: 600; }
+    .close-btn { padding: 10px 40px; background: white; color: black; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+
+<canvas id="canvas-stars"></canvas>
+
+<div class="help-container">
+  <div class="instruction-top">Consultez le guide pour bien débuter</div>
+  <button id="help-btn" onclick="openHelp()">?</button>
+  <span class="help-label">AIDE</span>
+</div>
+
+<div class="side-info">
+  <div id="status-main">À TOI !</div>
+  <div style="font-size: 0.9rem; opacity: 0.7; letter-spacing: 2px;">Mystery Sounds Royale - V 1.0</div>
+</div>
+
+<div class="timer-zone">
+  <div class="timer-track"><div id="timer-fill"></div></div>
+</div>
+
+<div class="game-goal">SURVIS AU CHAOS SONORE OU PASSE TON TOUR</div>
+
+<div class="buzzer-wrap">
+  <button id="buzzer-btn"></button>
+</div>
+
+<button id="skip-btn">PASSER LE TOUR</button>
+
+<div class="bug-warning">
+    SYSTÈME : IL EST POSSIBLE QUE CERTAINES SÉQUENCES AUDIO NE S'ACTIVENT PAS CORRECTEMENT.<br>
+    NOTRE ÉQUIPE TECHNIQUE EST INFORMÉE ET TRAVAILLE SUR UN CORRECTIF PRIORITAIRE.
+</div>
+
+<div id="overlay">
+  <div class="modal">
+    <h1 class="game-title">MYSTERY SOUNDS ROYALE</h1>
+    <p>Appuyez ou passez. Hasard total.</p>
+    <button id="start-btn" style="padding: 15px 60px; background: var(--primary); color: white; border: none; border-radius: 15px; cursor: pointer; font-weight: 900; font-size: 1.5rem; box-shadow: var(--primary-glow);">JOUER</button>
+  </div>
+</div>
+
+<div id="help-modal" style="display: none;">
+  <div class="modal" style="border-color: #00ccff; box-shadow: var(--blue-glow);">
+    <h2 style="color:#00ccff; margin-bottom: 20px;">GUIDE DE SURVIE</h2>
+    <p style="text-align: left; font-size: 0.9rem; line-height: 1.5;">
+      • <b>ÉQUIPE :</b> Prévoyez entre 4 et 8 participants.<br>
+      • <b>TOUR PAR TOUR :</b> Chaque joueur active le buzzer. Si un son retentit, le chaos commence !<br>
+      • <b>STRATÉGIE :</b> Vous pouvez "Passer le tour". Votre voisin sera obligé de presser le bouton !<br>
+      • <b>HASARD :</b> La sélection est 100% aléatoire. Il est normal de tomber plusieurs fois sur le même son, c'est le destin !<br>
+      • <b>LE TIMER :</b> La barre rouge à droite indique le temps de recharge.<br>
+      • <b>LA CHANCE :</b> Si "LUCK 😎" s'affiche, vous êtes sauvé !
+    </p>
+    <div class="chaos-box">
+      <h3 style="color:var(--primary); margin-bottom: 5px;">⚠️ CHAOS MAXIMUM ⚠️</h3>
+      <p style="color: white; font-size: 0.85rem; margin-bottom: 0; text-transform: uppercase;">MONTEZ LE VOLUME AU MAXIMUM ET LIBÉREZ LE CHAOS !</p>
+    </div>
+    <button class="close-btn" onclick="closeHelp()">J'AI COMPRIS</button>
+  </div>
+</div>
+
+<script>
+  const buzzer = document.getElementById('buzzer-btn');
+  const skipBtn = document.getElementById('skip-btn');
+  const timerFill = document.getElementById('timer-fill');
+  const statusTxt = document.getElementById('status-main');
+  const startBtn = document.getElementById('start-btn');
+  const overlay = document.getElementById('overlay');
+  const helpModal = document.getElementById('help-modal');
+
+  const sounds = [
+    "roblox-death", "its-raining-tacos", "metal-gear-solid-alert", 
+    "fils-de", "sonnerie-college", "drill-brainrot", 
+    "le-caca-est-cuit", "siuuuuu", "hold-up-tiktok", "nfl-bass-boosted", 
+    "subway-surfers-bass", "vine-boom", "metal-pipe-clang", "ak-47-loud", 
+    "earrape-bass-boost", "tk78-rage-mais-arrete", "michael-jackson-hee-hee", 
+    "tes-en-calecon-ta-la-barre", "discord-call-bass-boosted", "fortnite-default-dance-bass-boost", "coucou-tu-veux-voir-ma"
+  ];
+  
+  let isLocked = false;
+  function openHelp() { helpModal.style.display = 'flex'; }
+  function closeHelp() { helpModal.style.display = 'none'; }
+
+  startBtn.onclick = () => {
+    overlay.style.display = 'none';
+    const bg = new Audio("https://www.chosic.com/wp-content/uploads/2021/04/And-So-It-Begins-Inspired-By-Crush-It.mp3");
+    bg.loop = true; bg.volume = 0.1; bg.play().catch(() => {});
+  };
+
+  function startCooldown() {
+    isLocked = true; buzzer.disabled = true; skipBtn.disabled = true;
+    if(statusTxt.innerText !== "LUCK 😎") {
+        statusTxt.innerText = "ATTENDS";
+        statusTxt.style.color = "red";
+        statusTxt.style.textShadow = "0 0 20px red";
+    }
+    let duration = 5000;
+    let start = Date.now();
+    let timerId = setInterval(() => {
+      let elapsed = Date.now() - start;
+      let progress = Math.min((elapsed / duration) * 100, 100);
+      timerFill.style.height = (100 - progress) + "%"; 
+      if (progress >= 100) {
+        clearInterval(timerId); isLocked = false; buzzer.disabled = false; skipBtn.disabled = false;
+        statusTxt.innerText = "À TOI !"; statusTxt.style.color = "#00ff88"; statusTxt.style.textShadow = "var(--green-glow)";
+        timerFill.style.height = "0%";
+      }
+    }, 30);
+  }
+
+  buzzer.onclick = () => {
+    if (isLocked) return;
+    isLocked = true; buzzer.disabled = true; skipBtn.disabled = true;
+
+    if (Math.random() < 0.15) {
+        statusTxt.innerText = "LUCK 😎";
+        statusTxt.style.color = "#00ccff"; statusTxt.style.textShadow = "var(--blue-glow)";
+        setTimeout(startCooldown, 1500); 
+        return;
+    }
+
+    const randomSound = sounds[Math.floor(Math.random() * sounds.length)];
+    const audio = new Audio(`https://www.myinstants.com/media/sounds/${randomSound}.mp3`);
+    
+    let playStarted = false;
+    audio.onplay = () => { 
+        playStarted = true; 
+        statusTxt.innerText = "LANCÉ !"; 
+        statusTxt.style.color = "orange"; 
+        statusTxt.style.textShadow = "var(--orange-glow)"; 
+    };
+
+    audio.onended = startCooldown;
+    audio.onerror = startCooldown;
+
+    setTimeout(() => { if(!playStarted) startCooldown(); }, 2000);
+    audio.play().catch(startCooldown);
+  };
+
+  skipBtn.onclick = () => { 
+    if (!isLocked) { 
+        statusTxt.innerText = "TOUR PASSÉ"; 
+        statusTxt.style.color = "white"; 
+        statusTxt.style.textShadow = "0 0 10px white";
+        startCooldown(); 
+    } 
+  };
+
+  const canvas = document.getElementById('canvas-stars');
+  const ctx = canvas.getContext('2d');
+  function res() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  window.onresize = res; res();
+  let stars = Array(120).fill().map(() => ({x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*1.5}));
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height); ctx.fillStyle="white";
+    stars.forEach(s => { s.y -= 0.3; if(s.y < 0) s.y = canvas.height; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); });
+    requestAnimationFrame(draw);
+  }
+  draw();
+</script>
+</body>
+</html>
